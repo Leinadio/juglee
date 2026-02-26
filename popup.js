@@ -54,6 +54,40 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // Importer
+  const importBtn = document.getElementById("importBtn");
+  const importFile = document.getElementById("importFile");
+
+  importBtn.addEventListener("click", () => importFile.click());
+
+  importFile.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = JSON.parse(evt.target.result);
+        const videos = data.watchedVideos;
+        const titles = data.videoTitles || {};
+        if (!Array.isArray(videos)) throw new Error("Format invalide");
+
+        // Fusionner avec les données existantes
+        chrome.storage.local.get({ watchedVideos: [], videoTitles: {} }, (result) => {
+          const merged = new Set([...result.watchedVideos, ...videos]);
+          const mergedTitles = { ...result.videoTitles, ...titles };
+          chrome.storage.local.set(
+            { watchedVideos: [...merged], videoTitles: mergedTitles },
+            () => render([...merged], mergedTitles)
+          );
+        });
+      } catch {
+        alert("Fichier invalide. Utilisez un fichier exporté par l'extension.");
+      }
+      importFile.value = "";
+    };
+    reader.readAsText(file);
+  });
+
   clearBtn.addEventListener("click", () => {
     if (confirm("Effacer toutes les vidéos marquées ?")) {
       chrome.storage.local.set({ watchedVideos: [], videoTitles: {} }, () => {
