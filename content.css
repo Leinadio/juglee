@@ -1,0 +1,86 @@
+/* Conteneurs de positionnement */
+a#thumbnail {
+  position: relative;
+  display: block;
+}
+
+/* ===== Bouton sur les miniatures ===== */
+.yw-thumb-btn {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 14px;
+  color: #fff;
+  font-size: 12px;
+  font-family: "Roboto", Arial, sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  line-height: 1;
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.yw-thumb-btn svg {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+.yw-thumb-btn:hover {
+  background: rgba(0, 0, 0, 0.95);
+}
+
+.yw-thumb-btn[data-watched="1"] {
+  background: rgba(46, 125, 50, 0.9);
+}
+
+.yw-thumb-btn[data-watched="1"]:hover {
+  background: rgba(183, 28, 28, 0.9);
+}
+
+/* ===== Bouton sur le player vidéo ===== */
+.yw-player-btn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 20px;
+  color: #fff;
+  font-size: 13px;
+  font-family: "Roboto", Arial, sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.yw-player-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+.yw-player-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.yw-player-btn[data-watched="1"] {
+  background: rgba(46, 125, 50, 0.85);
+}
+
+.yw-player-btn[data-watched="1"]:hover {
+  background: rgba(46, 125, 50, 1);
+}
