@@ -15,8 +15,29 @@
     });
   }
 
+  let videoTitles = {};
+
+  function loadVideoTitles() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get({ videoTitles: {} }, (result) => {
+        videoTitles = result.videoTitles || {};
+        resolve();
+      });
+    });
+  }
+
   function saveWatchedVideos() {
-    chrome.storage.local.set({ watchedVideos: [...watchedVideos] });
+    const MAX_BYTES = 9 * 1024 * 1024; // 9 Mo (marge sur le quota de 10 Mo)
+    const videosArray = [...watchedVideos];
+    const data = { watchedVideos: videosArray, videoTitles };
+
+    while (JSON.stringify(data).length > MAX_BYTES && data.watchedVideos.length > 0) {
+      const oldest = data.watchedVideos.shift();
+      delete data.videoTitles[oldest];
+      watchedVideos.delete(oldest);
+    }
+
+    chrome.storage.local.set(data);
   }
 
   function extractVideoId(url) {
@@ -32,14 +53,35 @@
     return null;
   }
 
-  function toggleWatched(videoId) {
+  function toggleWatched(videoId, title) {
     if (watchedVideos.has(videoId)) {
       watchedVideos.delete(videoId);
+      delete videoTitles[videoId];
     } else {
       watchedVideos.add(videoId);
+      if (title) videoTitles[videoId] = title;
     }
     saveWatchedVideos();
     return watchedVideos.has(videoId);
+  }
+
+  // Trouver le titre de la vidéo depuis le DOM autour du lien
+  function findVideoTitle(link) {
+    // Remonter au renderer parent (fonctionne sur toutes les pages)
+    const renderer = link.closest(
+      "ytd-rich-item-renderer, ytd-video-renderer, ytd-compact-video-renderer, ytd-grid-video-renderer"
+    );
+    if (renderer) {
+      const titleEl = renderer.querySelector("#video-title, h3 a#video-title-link, h3");
+      if (titleEl) return titleEl.textContent.trim();
+    }
+    // Page d'accueil : yt-lockup-view-model
+    const lockup = link.closest("yt-lockup-view-model");
+    if (lockup) {
+      const h3 = lockup.querySelector("h3");
+      if (h3) return h3.textContent.trim();
+    }
+    return null;
   }
 
   function setBtnState(btn, isWatched) {
@@ -129,7 +171,8 @@
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         e.preventDefault();
-        const isWatched = toggleWatched(videoId);
+        const title = findVideoTitle(link);
+        const isWatched = toggleWatched(videoId, title);
         setBtnState(btn, isWatched);
       });
 
@@ -154,7 +197,9 @@
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       e.preventDefault();
-      const isWatched = toggleWatched(videoId);
+      const titleEl = document.querySelector("h1.ytd-watch-metadata yt-formatted-string, h1.ytd-video-primary-info-renderer");
+      const title = titleEl ? titleEl.textContent.trim() : null;
+      const isWatched = toggleWatched(videoId, title);
       setBtnState(btn, isWatched);
     });
 
@@ -193,6 +238,7 @@
 
   async function init() {
     await loadWatchedVideos();
+    await loadVideoTitles();
     processThumbnails();
     processPlayer();
     startScanning();

@@ -4,8 +4,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const exportBtn = document.getElementById("exportBtn");
   const clearBtn = document.getElementById("clearBtn");
 
-  function render(watchedVideos) {
+  function render(watchedVideos, videoTitles) {
     const videos = watchedVideos || [];
+    const titles = videoTitles || {};
     totalCountEl.textContent = videos.length;
 
     recentListEl.innerHTML = "";
@@ -18,30 +19,31 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Afficher les 10 dernières (les plus récemment ajoutées)
     const recent = videos.slice(-10).reverse();
     recent.forEach((videoId) => {
       const li = document.createElement("li");
       const a = document.createElement("a");
       a.href = `https://www.youtube.com/watch?v=${videoId}`;
-      a.textContent = videoId;
+      a.textContent = titles[videoId] || videoId;
       a.target = "_blank";
       a.rel = "noopener";
-      li.textContent = "✓ ";
+      li.textContent = "\u2713 ";
       li.appendChild(a);
       recentListEl.appendChild(li);
     });
   }
 
-  // Charger et afficher
-  chrome.storage.local.get({ watchedVideos: [] }, (result) => {
-    render(result.watchedVideos);
+  chrome.storage.local.get({ watchedVideos: [], videoTitles: {} }, (result) => {
+    render(result.watchedVideos, result.videoTitles);
   });
 
-  // Exporter en JSON
   exportBtn.addEventListener("click", () => {
-    chrome.storage.local.get({ watchedVideos: [] }, (result) => {
-      const data = JSON.stringify({ watchedVideos: result.watchedVideos, exportedAt: new Date().toISOString() }, null, 2);
+    chrome.storage.local.get({ watchedVideos: [], videoTitles: {} }, (result) => {
+      const data = JSON.stringify({
+        watchedVideos: result.watchedVideos,
+        videoTitles: result.videoTitles,
+        exportedAt: new Date().toISOString(),
+      }, null, 2);
       const blob = new Blob([data], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -52,19 +54,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Tout effacer
   clearBtn.addEventListener("click", () => {
-    if (confirm("Êtes-vous sûr de vouloir effacer toutes les vidéos marquées ?")) {
-      chrome.storage.local.set({ watchedVideos: [] }, () => {
-        render([]);
+    if (confirm("Effacer toutes les vidéos marquées ?")) {
+      chrome.storage.local.set({ watchedVideos: [], videoTitles: {} }, () => {
+        render([], {});
       });
     }
   });
 
-  // Mettre à jour si le stockage change
   chrome.storage.onChanged.addListener((changes) => {
-    if (changes.watchedVideos) {
-      render(changes.watchedVideos.newValue || []);
+    if (changes.watchedVideos || changes.videoTitles) {
+      chrome.storage.local.get({ watchedVideos: [], videoTitles: {} }, (result) => {
+        render(result.watchedVideos, result.videoTitles);
+      });
     }
   });
 });
