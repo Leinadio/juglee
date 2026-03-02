@@ -1,8 +1,44 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const totalCountEl = document.getElementById("totalCount");
   const recentListEl = document.getElementById("recentList");
   const exportBtn = document.getElementById("exportBtn");
   const clearBtn = document.getElementById("clearBtn");
+  const langFrBtn = document.getElementById("langFr");
+  const langEnBtn = document.getElementById("langEn");
+
+  // Charger la langue sauvegardée
+  await loadLang();
+  applyTranslations();
+  updateLangButtons();
+
+  function applyTranslations() {
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      el.textContent = t(el.dataset.i18n);
+    });
+  }
+
+  function updateLangButtons() {
+    langFrBtn.classList.toggle("active", __ywLang === "fr");
+    langEnBtn.classList.toggle("active", __ywLang === "en");
+  }
+
+  langFrBtn.addEventListener("click", () => {
+    setLang("fr");
+    applyTranslations();
+    updateLangButtons();
+    chrome.storage.local.get({ watchedVideos: [], videoTitles: {} }, (result) => {
+      render(result.watchedVideos, result.videoTitles);
+    });
+  });
+
+  langEnBtn.addEventListener("click", () => {
+    setLang("en");
+    applyTranslations();
+    updateLangButtons();
+    chrome.storage.local.get({ watchedVideos: [], videoTitles: {} }, (result) => {
+      render(result.watchedVideos, result.videoTitles);
+    });
+  });
 
   function render(watchedVideos, videoTitles) {
     const videos = watchedVideos || [];
@@ -14,7 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (videos.length === 0) {
       const li = document.createElement("li");
       li.className = "empty-state";
-      li.textContent = "Aucune vidéo marquée";
+      li.textContent = t("emptyState");
       recentListEl.appendChild(li);
       return;
     }
@@ -81,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
           );
         });
       } catch {
-        alert("Fichier invalide. Utilisez un fichier exporté par l'extension.");
+        alert(t("invalidFile"));
       }
       importFile.value = "";
     };
@@ -89,7 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   clearBtn.addEventListener("click", () => {
-    if (confirm("Effacer toutes les vidéos marquées ?")) {
+    if (confirm(t("clearConfirm"))) {
       chrome.storage.local.set({ watchedVideos: [], videoTitles: {} }, () => {
         render([], {});
       });

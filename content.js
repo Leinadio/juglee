@@ -6,6 +6,9 @@
 
   let watchedVideos = new Set();
 
+  // Charger la langue au démarrage
+  loadLang();
+
   function loadWatchedVideos() {
     return new Promise((resolve) => {
       chrome.storage.local.get({ watchedVideos: [] }, (result) => {
@@ -87,12 +90,12 @@
   function setBtnState(btn, isWatched) {
     btn.setAttribute("data-watched", isWatched ? "1" : "0");
     if (isWatched) {
-      btn.innerHTML = `${CHECK_SVG}<span>Vu</span>`;
-      btn.title = "Retirer";
+      btn.innerHTML = `${CHECK_SVG}<span>${t("watched")}</span>`;
+      btn.title = t("remove");
       btn.style.display = "flex";
     } else {
-      btn.innerHTML = `${EYE_SVG}<span>Vu</span>`;
-      btn.title = "Marquer comme vu";
+      btn.innerHTML = `${EYE_SVG}<span>${t("watched")}</span>`;
+      btn.title = t("markAsWatched");
     }
   }
 
@@ -226,11 +229,20 @@
   });
 
   chrome.storage.onChanged.addListener((changes) => {
-    if (changes.watchedVideos) {
-      watchedVideos = new Set(changes.watchedVideos.newValue || []);
+    if (changes.lang) {
+      __ywLang = changes.lang.newValue || "fr";
+    }
+    if (changes.watchedVideos || changes.lang) {
+      if (changes.watchedVideos) {
+        watchedVideos = new Set(changes.watchedVideos.newValue || []);
+      }
       document.querySelectorAll(".yw-thumb-btn").forEach((btn) => {
         const link = btn.closest("[data-yw]");
         const videoId = link ? extractVideoId(link.href) : null;
+        if (videoId) setBtnState(btn, watchedVideos.has(videoId));
+      });
+      document.querySelectorAll(".yw-player-btn").forEach((btn) => {
+        const videoId = extractVideoId(window.location.href);
         if (videoId) setBtnState(btn, watchedVideos.has(videoId));
       });
     }
