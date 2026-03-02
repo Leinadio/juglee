@@ -1,4 +1,4 @@
-# Juglee — YouTube Watch Tracker
+# Juglee — YouTube Watch Marker
 
 A Chrome extension (Manifest V3) that lets you manually mark YouTube videos as watched and displays a visual badge on their thumbnails so you never lose track of what you've already seen.
 
