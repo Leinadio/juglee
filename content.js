@@ -175,21 +175,31 @@
   }
 
   setInterval(() => {
+    // ===== Thumbnail badges: hover detection =====
     const btn = findBtnUnderMouse();
 
     if (btn === currentHoveredBtn) {
       // Mettre à jour la position même si c'est le même bouton (scroll continu)
       if (btn) updateBadgePosition(btn);
-      return;
+    } else {
+      if (currentHoveredBtn && currentHoveredBtn.getAttribute("data-watched") === "0") {
+        currentHoveredBtn.style.display = "none";
+      }
+      currentHoveredBtn = btn;
+      if (btn) {
+        btn.style.display = "flex";
+        updateBadgePosition(btn);
+      }
     }
 
-    if (currentHoveredBtn && currentHoveredBtn.getAttribute("data-watched") === "0") {
-      currentHoveredBtn.style.display = "none";
-    }
-    currentHoveredBtn = btn;
-    if (btn) {
-      btn.style.display = "flex";
-      updateBadgePosition(btn);
+    // ===== Player badge: sync avec les contrôles YouTube =====
+    const playerBtn = document.querySelector(".yw-player-btn");
+    if (playerBtn) {
+      const player = playerBtn.parentElement;
+      if (player) {
+        const controlsVisible = !player.classList.contains("ytp-autohide");
+        playerBtn.style.display = controlsVisible ? "flex" : "none";
+      }
     }
   }, 100);
 
@@ -257,10 +267,12 @@
       setBtnState(btn, isWatched);
     });
 
-    player.addEventListener("mouseenter", () => (btn.style.display = "flex"));
-    player.addEventListener("mouseleave", () => (btn.style.display = "none"));
-
     player.appendChild(btn);
+
+    // Afficher si les contrôles YouTube sont déjà visibles
+    if (!player.classList.contains("ytp-autohide")) {
+      btn.style.display = "flex";
+    }
   }
 
   // ===== Scan périodique =====
