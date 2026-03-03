@@ -27,7 +27,7 @@ const I18N = {
   },
 };
 
-let __ywLang = "fr";
+let __ywLang = "en";
 
 function setLang(lang) {
   __ywLang = lang;
@@ -40,7 +40,7 @@ function t(key) {
 
 function loadLang() {
   return new Promise((resolve) => {
-    chrome.storage.local.get({ lang: "fr" }, (result) => {
+    chrome.storage.local.get({ lang: "en" }, (result) => {
       __ywLang = result.lang;
       resolve(__ywLang);
     });

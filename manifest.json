@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Juglee — YouTube Watch Marker",
+  "name": "Jugleey — Mark YouTube videos as watched",
   "version": "1.0.0",
-  "description": "Mark YouTube videos as watched and spot them instantly with a green badge on every thumbnail.",
+  "description": "Mark YouTube videos as watched and spot them instantly with a badge on every thumbnail.",
   "permissions": ["storage"],
   "host_permissions": ["*://*.youtube.com/*"],
   "content_scripts": [
