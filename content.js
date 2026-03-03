@@ -99,6 +99,47 @@
     }
   }
 
+  // ===== Positionnement des badges (fixed sur body) =====
+  // Les badges utilisent position:fixed et sont attachés au <body>.
+  // Cela bypass tous les stacking contexts de YouTube (preview player, etc.)
+
+  function updateBadgePosition(btn) {
+    const container = btn._ywContainer;
+    if (!container || !container.isConnected) {
+      btn.remove();
+      return;
+    }
+    if (btn.style.display === "none") return;
+    const rect = container.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      // Conteneur hors écran ou caché
+      btn.style.visibility = "hidden";
+      return;
+    }
+    btn.style.visibility = "visible";
+    btn.style.top = (rect.top + 6) + "px";
+    btn.style.left = (rect.left + 6) + "px";
+  }
+
+  function updateAllVisibleBadges() {
+    document.querySelectorAll(".yw-thumb-btn").forEach((btn) => {
+      if (btn.style.display !== "none") updateBadgePosition(btn);
+    });
+  }
+
+  // Mettre à jour les positions au scroll et resize (throttle via rAF)
+  let rafId;
+  function onScrollOrResize() {
+    if (rafId) return;
+    rafId = requestAnimationFrame(() => {
+      rafId = null;
+      updateAllVisibleBadges();
+    });
+  }
+
+  window.addEventListener("scroll", onScrollOrResize, { passive: true, capture: true });
+  window.addEventListener("resize", onScrollOrResize, { passive: true });
+
   // ===== Hover via polling de la position souris =====
   // YouTube injecte un video player au hover qui casse les événements DOM.
   // On utilise un polling basé sur les coordonnées de la souris.
@@ -118,10 +159,9 @@
     // Trouver tous les boutons et vérifier si la souris est dans le rect de leur miniature
     const btns = document.querySelectorAll(".yw-thumb-btn");
     for (const btn of btns) {
-      // Remonter au lien parent data-yw pour obtenir la zone de la miniature
-      const link = btn.closest("[data-yw]");
-      if (!link) continue;
-      const rect = link.getBoundingClientRect();
+      const container = btn._ywContainer;
+      if (!container || !container.isConnected) continue;
+      const rect = container.getBoundingClientRect();
       if (
         mouseX >= rect.left &&
         mouseX <= rect.right &&
@@ -137,7 +177,11 @@
   setInterval(() => {
     const btn = findBtnUnderMouse();
 
-    if (btn === currentHoveredBtn) return;
+    if (btn === currentHoveredBtn) {
+      // Mettre à jour la position même si c'est le même bouton (scroll continu)
+      if (btn) updateBadgePosition(btn);
+      return;
+    }
 
     if (currentHoveredBtn && currentHoveredBtn.getAttribute("data-watched") === "0") {
       currentHoveredBtn.style.display = "none";
@@ -145,6 +189,7 @@
     currentHoveredBtn = btn;
     if (btn) {
       btn.style.display = "flex";
+      updateBadgePosition(btn);
     }
   }, 100);
 
@@ -161,10 +206,13 @@
 
       link.setAttribute("data-yw", "1");
 
-      const anchor = link.querySelector("yt-thumbnail-view-model") || link;
+      // Conteneur de référence pour le positionnement du badge
+      const container = link.closest("ytd-thumbnail") || link.parentElement || link;
 
       const btn = document.createElement("button");
       btn.className = "yw-thumb-btn";
+      btn.dataset.videoId = videoId;
+      btn._ywContainer = container;
       setBtnState(btn, watchedVideos.has(videoId));
 
       if (!watchedVideos.has(videoId)) {
@@ -177,9 +225,12 @@
         const title = findVideoTitle(link);
         const isWatched = toggleWatched(videoId, title);
         setBtnState(btn, isWatched);
+        if (isWatched) updateBadgePosition(btn);
       });
 
-      anchor.appendChild(btn);
+      // Badge attaché au body en position:fixed pour bypass les stacking contexts
+      document.body.appendChild(btn);
+      if (watchedVideos.has(videoId)) updateBadgePosition(btn);
     });
   }
 
@@ -218,11 +269,20 @@
     setInterval(() => {
       processThumbnails();
       processPlayer();
+      // Mettre à jour les positions des badges watched visibles
+      updateAllVisibleBadges();
+      // Nettoyer les badges orphelins (conteneur supprimé du DOM)
+      document.querySelectorAll(".yw-thumb-btn").forEach((btn) => {
+        if (!btn._ywContainer || !btn._ywContainer.isConnected) {
+          btn.remove();
+        }
+      });
     }, 1000);
   }
 
   document.addEventListener("yt-navigate-finish", () => {
     document.querySelectorAll(".yw-player-btn").forEach((b) => b.remove());
+    document.querySelectorAll(".yw-thumb-btn").forEach((b) => b.remove());
     document.querySelectorAll("[data-yw]").forEach((el) =>
       el.removeAttribute("data-yw")
     );
@@ -237,9 +297,11 @@
         watchedVideos = new Set(changes.watchedVideos.newValue || []);
       }
       document.querySelectorAll(".yw-thumb-btn").forEach((btn) => {
-        const link = btn.closest("[data-yw]");
-        const videoId = link ? extractVideoId(link.href) : null;
-        if (videoId) setBtnState(btn, watchedVideos.has(videoId));
+        const videoId = btn.dataset.videoId;
+        if (videoId) {
+          setBtnState(btn, watchedVideos.has(videoId));
+          if (watchedVideos.has(videoId)) updateBadgePosition(btn);
+        }
       });
       document.querySelectorAll(".yw-player-btn").forEach((btn) => {
         const videoId = extractVideoId(window.location.href);

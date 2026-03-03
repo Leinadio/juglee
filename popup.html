@@ -8,7 +8,15 @@
   <div class="popup-container">
     <div class="header">
       <div class="logo">
-        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="#2e7d32" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        <svg viewBox="0 0 24 24" width="24" height="24">
+          <defs>
+            <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#fc4e4e"/>
+              <stop offset="100%" stop-color="#d0a0ff"/>
+            </linearGradient>
+          </defs>
+          <path fill="url(#logoGrad)" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>
         <h1>YouTube Watched</h1>
       </div>
       <div class="lang-toggle">
